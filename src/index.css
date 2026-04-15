@@ -1,0 +1,106 @@
+:root {
+  --text: #5c6878;
+  --text-strong: #213042;
+  --muted: #728194;
+  --muted-strong: #556577;
+  --bg: #f3f6f9;
+  --surface: #fcfdfe;
+  --border: rgba(121, 136, 153, 0.18);
+  --border-strong: rgba(92, 108, 126, 0.26);
+  --code-bg: #f4f6f8;
+  --accent: #4a6783;
+  --accent-soft: rgba(74, 103, 131, 0.1);
+  --shadow:
+    rgba(18, 33, 51, 0.06) 0 20px 44px -28px,
+    rgba(18, 33, 51, 0.06) 0 8px 20px -14px;
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+  font: 16px/1.78 var(--sans);
+  letter-spacing: 0.02em;
+  color: var(--text);
+  background: linear-gradient(180deg, #f5f7fa 0%, #eef3f8 100%);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+[data-theme="dark"] {
+  --text: #b8c4d0;
+  --text-strong: #e4eaf0;
+  --muted: #8a98a8;
+  --muted-strong: #9aa8b8;
+  --bg: #1a1f2e;
+  --surface: #242b3d;
+  --border: rgba(200, 210, 225, 0.12);
+  --border-strong: rgba(200, 210, 225, 0.2);
+  --code-bg: #2a3347;
+  --accent: #6b8fb5;
+  --accent-soft: rgba(107, 143, 181, 0.15);
+  --shadow:
+    rgba(0, 0, 0, 0.3) 0 20px 44px -28px,
+    rgba(0, 0, 0, 0.2) 0 8px 20px -14px;
+  background: linear-gradient(180deg, #1a1f2e 0%, #151a27 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+#root {
+  margin: 0 auto;
+  min-height: 100vh;
+  width: min(1600px, 100%);
+}
+
+body {
+  background: var(--bg);
+  margin: 0;
+  min-width: 360px;
+}
+
+h1,
+h2 {
+  color: var(--text-strong);
+  font-family: var(--heading);
+  font-weight: 700;
+  margin: 0;
+}
+
+h1 {
+  font-size: 40px;
+  letter-spacing: -0.03em;
+  line-height: 1.22;
+}
+
+h2 {
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  line-height: 1.34;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+}
+
+code {
+  background: var(--code-bg);
+  border-radius: 8px;
+  color: var(--text-strong);
+  display: inline-flex;
+  font-family: var(--mono);
+  font-size: 15px;
+  line-height: 1.5;
+  padding: 4px 8px;
+}
