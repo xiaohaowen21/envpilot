@@ -11,6 +11,7 @@ import type {
   OperationResult,
   RuntimeCatalogOption,
 } from '../../../shared/contracts'
+import { loadConfig } from './config-manager'
 import { createEnvironmentBackup, getEnvironmentVariables, getStoragePaths } from './env-manager'
 import { downloadFile, type ProgressCallback } from './http-client'
 import { appendOperationLog } from './operation-log'
@@ -156,6 +157,30 @@ function escapeForPowerShellHereString(value: string): string {
 function wait(milliseconds: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, milliseconds)
+  })
+}
+
+function emitProgressStage(
+  onProgress: ProgressCallback | undefined,
+  stage:
+    | 'preparing'
+    | 'extracting'
+    | 'installing'
+    | 'configuring'
+    | 'finalizing'
+    | 'completed',
+  label: string,
+  detail: string,
+  url = '',
+): void {
+  onProgress?.({
+    bytesReceived: 0,
+    contentLength: 0,
+    detail,
+    label,
+    percentage: stage === 'completed' ? 100 : 0,
+    stage,
+    url,
   })
 }
 
@@ -341,6 +366,18 @@ function composeManagedPath(rootDir: string, userPath: string, activeRuntimeKeys
     .join(';')
 }
 
+function mergePathValues(...segments: string[]): string {
+  return segments
+    .flatMap((segment) => segment.split(';'))
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .filter((item, index, list) => {
+      const normalized = normalizePath(item)
+      return normalized && list.findIndex((value) => normalizePath(value) === normalized) === index
+    })
+    .join(';')
+}
+
 async function notifyEnvironmentChanged(): Promise<void> {
   await runPowerShell(
     `
@@ -381,8 +418,10 @@ function buildEnvironmentAssignments(rootDir: string, state: Awaited<ReturnType<
 
   return [
     setVariable('JAVA_HOME', activeJava ? path.join(rootDir, 'links', 'java') : undefined),
+    setVariable('JDK_HOME', activeJava ? path.join(rootDir, 'links', 'java') : undefined),
     setVariable('NODE_HOME', activeNode ? path.join(rootDir, 'links', 'nodejs') : undefined),
-    setVariable('PYTHONHOME', activePython ? path.join(rootDir, 'links', 'python') : undefined),
+    setVariable('PYTHON_HOME', activePython ? path.join(rootDir, 'links', 'python') : undefined),
+    setVariable('PYTHONHOME', undefined),
     setVariable('GOROOT', activeGo ? path.join(rootDir, 'links', 'go') : undefined),
     setVariable('PHP_HOME', activePhp ? path.join(rootDir, 'links', 'php') : undefined),
     setVariable('CARGO_HOME', activeRust ? path.join(activeRust.installDir, 'cargo') : undefined),
@@ -390,7 +429,11 @@ function buildEnvironmentAssignments(rootDir: string, state: Awaited<ReturnType<
   ].join('\n')
 }
 
-function syncProcessEnvironment(rootDir: string, state: Awaited<ReturnType<typeof readRuntimeState>>, desiredPath: string) {
+function syncProcessEnvironment(
+  rootDir: string,
+  state: Awaited<ReturnType<typeof readRuntimeState>>,
+  desiredPath: string,
+) {
   const activeJava = state.runtimes.java.find((item) => item.isActive)
   const activeNode = state.runtimes.node.find((item) => item.isActive)
   const activePython = state.runtimes.python.find((item) => item.isActive)
@@ -399,11 +442,14 @@ function syncProcessEnvironment(rootDir: string, state: Awaited<ReturnType<typeo
   const activeRust = state.runtimes.rust.find((item) => item.isActive)
 
   process.env.PATH = desiredPath
+  process.env.Path = desiredPath
 
   if (activeJava) {
     process.env.JAVA_HOME = path.join(rootDir, 'links', 'java')
+    process.env.JDK_HOME = path.join(rootDir, 'links', 'java')
   } else {
     delete process.env.JAVA_HOME
+    delete process.env.JDK_HOME
   }
 
   if (activeNode) {
@@ -413,10 +459,12 @@ function syncProcessEnvironment(rootDir: string, state: Awaited<ReturnType<typeo
   }
 
   if (activePython) {
-    process.env.PYTHONHOME = path.join(rootDir, 'links', 'python')
+    process.env.PYTHON_HOME = path.join(rootDir, 'links', 'python')
   } else {
-    delete process.env.PYTHONHOME
+    delete process.env.PYTHON_HOME
   }
+
+  delete process.env.PYTHONHOME
 
   if (activeGo) {
     process.env.GOROOT = path.join(rootDir, 'links', 'go')
@@ -448,7 +496,10 @@ async function syncManagedEnvironment(): Promise<void> {
   const userVariables = await getEnvironmentVariables()
   const userPath =
     userVariables.find((item) => item.scope === 'user' && item.name.toLowerCase() === 'path')?.value ?? ''
-  const desiredPath = composeManagedPath(rootDir, userPath, activeRuntimeKeys)
+  const machinePath =
+    userVariables.find((item) => item.scope === 'machine' && item.name.toLowerCase() === 'path')?.value ?? ''
+  const desiredUserPath = composeManagedPath(rootDir, userPath, activeRuntimeKeys)
+  const desiredProcessPath = mergePathValues(desiredUserPath, machinePath)
 
   for (const runtime of Object.keys(runtimeConfigMap) as ManagedRuntimeKey[]) {
     const activeVersion = state.runtimes[runtime].find((item) => item.isActive)
@@ -464,13 +515,13 @@ async function syncManagedEnvironment(): Promise<void> {
   await runPowerShell(
     `
 [Environment]::SetEnvironmentVariable('Path', @'
-${escapeForPowerShellHereString(desiredPath)}
+${escapeForPowerShellHereString(desiredUserPath)}
 '@, 'User')
 ${buildEnvironmentAssignments(rootDir, state)}
 `,
   )
 
-  syncProcessEnvironment(rootDir, state, desiredPath)
+  syncProcessEnvironment(rootDir, state, desiredProcessPath)
   await notifyEnvironmentChanged()
 }
 
@@ -629,6 +680,52 @@ if ($LASTEXITCODE -ne 0) {
   } satisfies InstalledArtifact
 }
 
+async function installPythonRuntime(installerPath: string, installRoot: string, version: string) {
+  const installDir = path.join(installRoot, sanitizePathSegment(version))
+
+  if (!existsSync(path.join(installDir, 'python.exe'))) {
+    await fs.rm(installDir, { force: true, recursive: true })
+    await fs.mkdir(installDir, { recursive: true })
+    await runPowerShell(
+      `
+$targetDir = @'
+${escapeForPowerShellHereString(installDir)}
+'@
+$installer = @'
+${escapeForPowerShellHereString(installerPath)}
+'@
+$arguments = @(
+  '/quiet',
+  'InstallAllUsers=0',
+  'PrependPath=0',
+  'Include_doc=0',
+  'Include_launcher=0',
+  'Include_test=0',
+  'Include_pip=1',
+  'CompileAll=0',
+  'Shortcuts=0',
+  'SimpleInstall=1',
+  "TargetDir=$targetDir"
+)
+$process = Start-Process -FilePath $installer -ArgumentList $arguments -Wait -PassThru
+if ($process.ExitCode -ne 0) {
+  throw "Python installer exited with code $($process.ExitCode)."
+}
+`,
+    )
+  }
+
+  if (!existsSync(path.join(installDir, 'python.exe'))) {
+    throw new Error('Python installer completed, but python.exe was not found in the managed directory.')
+  }
+
+  return {
+    installDir,
+    linkTarget: getRuntimeLinkTarget('python', installDir),
+    version,
+  } satisfies InstalledArtifact
+}
+
 function getArchiveFileName(runtime: ManagedRuntimeKey, catalog: RuntimeCatalogOption): string {
   const pathname = catalog.downloadUrl ? new URL(catalog.downloadUrl).pathname : ''
   const fromUrl = pathname.split('/').pop()
@@ -646,14 +743,15 @@ function getInstallSuccessMessage(
   artifact: InstalledArtifact,
 ): string {
   if (runtime === 'java' && artifact.vendor) {
-    return `${JAVA_VENDOR_SUPPORT[artifact.vendor].label} ${artifact.version} is installed and active.`
+    return `${JAVA_VENDOR_SUPPORT[artifact.vendor].label} ${artifact.version} is active. Entry point and environment variables were refreshed.`
   }
 
-  return `${runtimeConfigMap[runtime].label} ${artifact.version} is installed and active.`
+  return `${runtimeConfigMap[runtime].label} ${artifact.version} is active. Entry point and environment variables were refreshed.`
 }
 
 export async function getManagedRuntimeSummaries(): Promise<ManagedRuntimeSummary[]> {
   const state = await readRuntimeState()
+  const config = await loadConfig()
   const { rootDir } = await getStoragePaths()
   const runtimes = Object.keys(runtimeConfigMap) as ManagedRuntimeKey[]
 
@@ -675,7 +773,7 @@ export async function getManagedRuntimeSummaries(): Promise<ManagedRuntimeSummar
         installOptions:
           runtime === 'java'
             ? {
-                cleanupArchiveDefault: true,
+                cleanupArchiveDefault: config.downloadCleanupEnabled,
                 javaVendors: (Object.keys(JAVA_VENDOR_SUPPORT) as JavaVendor[]).map((vendor) => ({
                   key: vendor,
                   label: JAVA_VENDOR_SUPPORT[vendor].label,
@@ -683,7 +781,7 @@ export async function getManagedRuntimeSummaries(): Promise<ManagedRuntimeSummar
                 })),
               }
             : {
-                cleanupArchiveDefault: true,
+                cleanupArchiveDefault: config.downloadCleanupEnabled,
               },
         installedVersions: state.runtimes[runtime]
           .slice()
@@ -708,26 +806,47 @@ export async function installManagedRuntime(
   onProgress?: ProgressCallback,
 ): Promise<OperationResult> {
   const catalog = await resolveCatalogOption(runtime, options)
+  const config = await loadConfig()
   const { rootDir } = await getStoragePaths()
   const paths = getRuntimePaths(runtime, rootDir)
   const fileName = getArchiveFileName(runtime, catalog)
   const archivePath = path.join(paths.downloadRoot, fileName)
-  const shouldCleanupArchive = options?.cleanupArchive ?? true
+  const shouldCleanupArchive = options?.cleanupArchive ?? config.downloadCleanupEnabled
+  const runtimeLabel = runtimeConfigMap[runtime].label
 
   await appendOperationLog({
     createdAt: new Date().toISOString(),
     level: 'info',
-    message: `${runtimeConfigMap[runtime].label} ${catalog.version}: downloading official package.`,
+    message: `${runtimeLabel} ${catalog.version}: downloading official package.`,
   })
 
+  emitProgressStage(onProgress, 'preparing', 'Preparing install', `Preparing ${runtimeLabel} ${catalog.version}.`, catalog.downloadUrl)
   await downloadFile(catalog.downloadUrl, archivePath, onProgress)
+  emitProgressStage(
+    onProgress,
+    runtime === 'rust' || catalog.installerType === 'executable' ? 'installing' : 'extracting',
+    runtime === 'rust' || catalog.installerType === 'executable' ? 'Running installer' : 'Extracting package',
+    runtime === 'rust' || catalog.installerType === 'executable'
+      ? `Running the official ${runtimeLabel} installer into the managed directory.`
+      : `Extracting ${runtimeLabel} into the managed directory.`,
+    catalog.downloadUrl,
+  )
 
   const artifact: InstalledArtifact =
-    runtime === 'rust' || catalog.installerType === 'executable'
+    runtime === 'rust'
       ? await installRustRuntime(archivePath, paths.installRoot, catalog.version)
-      : await installArchiveRuntime(runtime, catalog, archivePath, paths.installRoot)
+      : runtime === 'python' && catalog.installerType === 'executable'
+        ? await installPythonRuntime(archivePath, paths.installRoot, catalog.version)
+        : await installArchiveRuntime(runtime, catalog, archivePath, paths.installRoot)
 
-  await withProtectedMutation(`${runtimeConfigMap[runtime].label} ${artifact.version} install`, async () => {
+  emitProgressStage(
+    onProgress,
+    'configuring',
+    'Refreshing environment',
+    `Updating stable entry points and environment variables for ${runtimeLabel}.`,
+  )
+
+  await withProtectedMutation(`${runtimeLabel} ${artifact.version} install`, async () => {
     await upsertInstalledRuntime(runtime, {
       addedAt: new Date().toISOString(),
       entryPoint: paths.linkPath,
@@ -744,6 +863,13 @@ export async function installManagedRuntime(
   if (shouldCleanupArchive) {
     await fs.rm(archivePath, { force: true })
   }
+
+  emitProgressStage(
+    onProgress,
+    'completed',
+    'Install complete',
+    `${runtimeLabel} ${artifact.version} is ready to use.`,
+  )
 
   return {
     message: getInstallSuccessMessage(runtime, artifact),

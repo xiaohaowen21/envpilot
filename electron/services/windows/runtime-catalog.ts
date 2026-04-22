@@ -139,7 +139,7 @@ async function resolveNodeCatalogs(): Promise<RuntimeCatalogOption[]> {
 }
 
 async function resolvePythonCatalogs(): Promise<RuntimeCatalogOption[]> {
-  const arch = getWindowsArch()
+  const arch = getWindowsArch() === 'arm64' ? 'arm64' : 'amd64'
   const directoryContent = await fetchText('https://www.python.org/ftp/python/')
   const versions = Array.from(directoryContent.matchAll(/href="(3\.\d+\.\d+)\/"/g)).map(
     (match) => match[1],
@@ -158,7 +158,8 @@ async function resolvePythonCatalogs(): Promise<RuntimeCatalogOption[]> {
 
     selected.push({
       channel: latestPatch.startsWith('3.13') ? 'Stable' : 'Legacy',
-      downloadUrl: `https://www.python.org/ftp/python/${latestPatch}/python-${latestPatch}-${arch}.zip`,
+      downloadUrl: `https://www.python.org/ftp/python/${latestPatch}/python-${latestPatch}-${arch}.exe`,
+      installerType: 'executable',
       label: `Python ${latestPatch}`,
       version: latestPatch,
     })

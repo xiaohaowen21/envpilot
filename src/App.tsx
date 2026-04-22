@@ -7,6 +7,7 @@ import type {
   DashboardData,
   DiagnosticResult,
   DownloadProgress,
+  InstalledManagedRuntime,
   InstallRuntimeOptions,
   JavaVendor,
   ManagedRuntimeKey,
@@ -85,6 +86,7 @@ function App() {
         ])
         setDashboard(dashboardData)
         setConfig(configData)
+        setCleanupArchive(configData.downloadCleanupEnabled)
         setLocale(configData.language)
       } finally {
         setLoading(false)
@@ -128,6 +130,14 @@ function App() {
 
     return unsubscribe
   }, [])
+
+  useEffect(() => {
+    if (!config) {
+      return
+    }
+
+    setCleanupArchive(config.downloadCleanupEnabled)
+  }, [config])
 
   const formatDateTime = (value: string) => new Date(value).toLocaleString(locale)
 
@@ -374,12 +384,80 @@ function App() {
   )
   const selectedJavaVendor = javaVendors.find((vendor) => vendor.key === javaVendor) ?? javaVendors[0]
   const supportedJavaVersions = new Set(selectedJavaVendor?.supportedVersions ?? [])
+  const progressTitle =
+    downloadProgress?.label ??
+    (locale === 'zh-CN' ? '正在处理当前任务' : 'Working on the current task')
+  const progressDetail =
+    downloadProgress?.detail ??
+    (locale === 'zh-CN'
+      ? '正在刷新下载、安装或环境变量步骤。'
+      : 'Refreshing download, install, or environment steps.')
+  const hasProgressBar = Boolean(downloadProgress && downloadProgress.contentLength > 0)
 
   useEffect(() => {
     if (!selectedJavaVendor && javaVendors[0]) {
       setJavaVendor(javaVendors[0].key)
     }
   }, [javaVendors, selectedJavaVendor])
+
+  const getRuntimeBindings = (
+    runtime: ManagedRuntimeKey,
+    activeVersion?: InstalledManagedRuntime,
+  ): Array<{ name: string; value: string }> => {
+    if (!dashboard || !activeVersion) {
+      return []
+    }
+
+    const root = dashboard.rootDir
+
+    if (runtime === 'java') {
+      const linkRoot = `${root}\\links\\java`
+      return [
+        { name: 'JAVA_HOME', value: linkRoot },
+        { name: 'JDK_HOME', value: linkRoot },
+        { name: 'PATH', value: `${linkRoot}\\bin` },
+      ]
+    }
+
+    if (runtime === 'node') {
+      const linkRoot = `${root}\\links\\nodejs`
+      return [
+        { name: 'NODE_HOME', value: linkRoot },
+        { name: 'PATH', value: linkRoot },
+      ]
+    }
+
+    if (runtime === 'python') {
+      const linkRoot = `${root}\\links\\python`
+      return [
+        { name: 'PYTHON_HOME', value: linkRoot },
+        { name: 'PATH', value: linkRoot },
+        { name: 'PATH', value: `${linkRoot}\\Scripts` },
+      ]
+    }
+
+    if (runtime === 'go') {
+      const linkRoot = `${root}\\links\\go`
+      return [
+        { name: 'GOROOT', value: linkRoot },
+        { name: 'PATH', value: `${linkRoot}\\bin` },
+      ]
+    }
+
+    if (runtime === 'php') {
+      const linkRoot = `${root}\\links\\php`
+      return [
+        { name: 'PHP_HOME', value: linkRoot },
+        { name: 'PATH', value: linkRoot },
+      ]
+    }
+
+    return [
+      { name: 'CARGO_HOME', value: `${activeVersion.installDir}\\cargo` },
+      { name: 'RUSTUP_HOME', value: `${activeVersion.installDir}\\rustup` },
+      { name: 'PATH', value: `${root}\\links\\rust` },
+    ]
+  }
 
   if (loading || !dashboard || !activeWorkspaceCard) {
     return (
@@ -594,9 +672,41 @@ function App() {
         </div>
       </section>
 
+      <section className="card-grid three-columns workflow-grid">
+        <article className="panel workflow-card">
+          <span className="workflow-step">01</span>
+          <strong>{locale === 'zh-CN' ? '官方包获取' : 'Official package'}</strong>
+          <p>
+            {locale === 'zh-CN'
+              ? '统一从官方源下载，可复用缓存，并把下载与安装状态拆开显示。'
+              : 'Downloads come from official sources, can reuse cached packages, and now show download and install as separate stages.'}
+          </p>
+        </article>
+        <article className="panel workflow-card">
+          <span className="workflow-step">02</span>
+          <strong>{locale === 'zh-CN' ? '托管安装目录' : 'Managed install directory'}</strong>
+          <p>
+            {locale === 'zh-CN'
+              ? '运行时会落到 D 盘托管目录，并通过稳定入口做版本切换。'
+              : 'Runtimes land in the managed directory on drive D and switch through a stable entry point.'}
+          </p>
+        </article>
+        <article className="panel workflow-card">
+          <span className="workflow-step">03</span>
+          <strong>{locale === 'zh-CN' ? '环境变量生效' : 'Environment activation'}</strong>
+          <p>
+            {locale === 'zh-CN'
+              ? '安装完成后会同步入口、PATH 以及对应语言变量，并立即刷新当前进程。'
+              : 'After install, EnvPilot refreshes entry points, PATH, and language-specific variables immediately.'}
+          </p>
+        </article>
+      </section>
+
       <section className="card-grid two-columns">
         {dashboard.managedRuntimes.map((runtime) => {
           const relatedInventory = runtimeInventory.find((item) => item.runtimeKey === runtime.key)
+          const activeManagedVersion = runtime.installedVersions.find((version) => version.isActive)
+          const runtimeBindings = getRuntimeBindings(runtime.key, activeManagedVersion)
           const availableVersions =
             runtime.key === 'java'
               ? runtime.availableVersions.filter((catalog) => supportedJavaVersions.has(catalog.version))
@@ -634,6 +744,35 @@ function App() {
                   </div>
                 </div>
               ) : null}
+
+              <CollapsibleSection
+                badge={
+                  runtimeBindings.length > 0
+                    ? `${runtimeBindings.length} ${locale === 'zh-CN' ? '项绑定' : 'bindings'}`
+                    : locale === 'zh-CN'
+                      ? '未激活'
+                      : 'Not active'
+                }
+                defaultOpen={Boolean(activeManagedVersion)}
+                title={locale === 'zh-CN' ? '环境变量与入口' : 'Environment bindings'}
+              >
+                {runtimeBindings.length === 0 ? (
+                  <p className="empty-tip">
+                    {locale === 'zh-CN'
+                      ? '当前还没有激活版本，所以还不会写入该语言的入口和环境变量。'
+                      : 'No managed version is active yet, so EnvPilot is not writing bindings for this runtime.'}
+                  </p>
+                ) : (
+                  <div className="binding-list">
+                    {runtimeBindings.map((binding, index) => (
+                      <div className="binding-row" key={`${runtime.key}-${binding.name}-${index}`}>
+                        <strong>{binding.name}</strong>
+                        <span>{binding.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CollapsibleSection>
 
               <CollapsibleSection
                 badge={runtime.sharedEntryPoint}
@@ -1506,21 +1645,38 @@ function App() {
         {downloadProgress && working ? (
           <section className="panel download-progress-panel">
             <div className="progress-header">
-              <strong>{locale === 'zh-CN' ? '下载进度' : 'Download Progress'}</strong>
-              <span>{downloadProgress.percentage}%</span>
-            </div>
-            <div className="progress-bar-container">
-              <div
-                className="progress-bar"
-                style={{ width: `${downloadProgress.percentage}%` }}
-              />
-            </div>
-            <div className="progress-details">
+              <div className="progress-copy">
+                <strong>{progressTitle}</strong>
+                <p>{progressDetail}</p>
+              </div>
               <span>
-                {(downloadProgress.bytesReceived / 1024 / 1024).toFixed(1)} MB /{' '}
-                {(downloadProgress.contentLength / 1024 / 1024).toFixed(1)} MB
+                {hasProgressBar
+                  ? `${downloadProgress.percentage}%`
+                  : locale === 'zh-CN'
+                    ? '处理中'
+                    : 'Working'}
               </span>
             </div>
+            {hasProgressBar ? (
+              <>
+                <div className="progress-bar-container">
+                  <div
+                    className="progress-bar"
+                    style={{ width: `${downloadProgress.percentage}%` }}
+                  />
+                </div>
+                <div className="progress-details">
+                  <span>
+                    {(downloadProgress.bytesReceived / 1024 / 1024).toFixed(1)} MB /{' '}
+                    {(downloadProgress.contentLength / 1024 / 1024).toFixed(1)} MB
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className="progress-stage-chip">
+                {downloadProgress.stage ?? 'working'}
+              </div>
+            )}
           </section>
         ) : null}
 

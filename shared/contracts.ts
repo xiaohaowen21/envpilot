@@ -185,6 +185,16 @@ export interface DownloadProgress {
   contentLength: number
   percentage: number
   url: string
+  detail?: string
+  label?: string
+  stage?:
+    | 'preparing'
+    | 'downloading'
+    | 'extracting'
+    | 'installing'
+    | 'configuring'
+    | 'finalizing'
+    | 'completed'
 }
 
 export interface AppConfig {

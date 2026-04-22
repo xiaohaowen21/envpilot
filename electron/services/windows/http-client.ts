@@ -7,6 +7,10 @@ import type { DownloadProgress } from '../../../shared/contracts'
 
 export type ProgressCallback = (progress: DownloadProgress) => void
 
+function emitProgress(onProgress: ProgressCallback | undefined, progress: DownloadProgress): void {
+  onProgress?.(progress)
+}
+
 export async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, {
     headers: {
@@ -15,7 +19,7 @@ export async function fetchJson<T>(url: string): Promise<T> {
   })
 
   if (!response.ok) {
-    throw new Error(`请求失败：${response.status} ${response.statusText}`)
+    throw new Error(`Request failed: ${response.status} ${response.statusText}`)
   }
 
   return (await response.json()) as T
@@ -29,7 +33,7 @@ export async function fetchText(url: string): Promise<string> {
   })
 
   if (!response.ok) {
-    throw new Error(`请求失败：${response.status} ${response.statusText}`)
+    throw new Error(`Request failed: ${response.status} ${response.statusText}`)
   }
 
   return response.text()
@@ -40,35 +44,66 @@ export async function downloadFile(
   destination: string,
   onProgress?: ProgressCallback,
 ): Promise<string> {
+  if (existsSync(destination)) {
+    const existingFileSize = statSync(destination).size
+
+    if (existingFileSize > 0) {
+      emitProgress(onProgress, {
+        bytesReceived: existingFileSize,
+        contentLength: existingFileSize,
+        detail: 'Using cached package',
+        label: 'Package ready',
+        percentage: 100,
+        stage: 'completed',
+        url,
+      })
+
+      return destination
+    }
+  }
+
   const tempFilePath = `${destination}.part`
-  const existingSize = existsSync(tempFilePath) ? statSync(tempFilePath).size : 0
+  const existingPartSize = existsSync(tempFilePath) ? statSync(tempFilePath).size : 0
 
   await fs.mkdir(path.dirname(destination), { recursive: true })
+  emitProgress(onProgress, {
+    bytesReceived: 0,
+    contentLength: 0,
+    detail: 'Connecting to official source',
+    label: 'Preparing download',
+    percentage: 0,
+    stage: 'preparing',
+    url,
+  })
 
   const response = await fetch(url, {
     headers: {
-      ...(existingSize > 0 ? { Range: `bytes=${existingSize}-` } : {}),
+      ...(existingPartSize > 0 ? { Range: `bytes=${existingPartSize}-` } : {}),
       'User-Agent': 'EnvPilot/0.1.0',
     },
   })
 
   if (!(response.ok || response.status === 206) || !response.body) {
-    throw new Error(`下载失败：${response.status} ${response.statusText}`)
+    throw new Error(`Download failed: ${response.status} ${response.statusText}`)
   }
 
+  const resumeSupported = response.status === 206 && existingPartSize > 0
+  const initialBytes = resumeSupported ? existingPartSize : 0
   const contentLength = Number(response.headers.get('content-length') ?? 0)
-  const totalBytes = existingSize + contentLength
-  let receivedBytes = existingSize
+  const totalBytes = initialBytes + contentLength
+  let receivedBytes = initialBytes
 
-  const append = response.status === 206 && existingSize > 0
-  const fileStream = createWriteStream(tempFilePath, { flags: append ? 'a' : 'w' })
+  const fileStream = createWriteStream(tempFilePath, { flags: resumeSupported ? 'a' : 'w' })
   const readable = Readable.fromWeb(response.body as globalThis.ReadableStream)
 
-  if (onProgress && totalBytes > 0) {
-    onProgress({
-      bytesReceived: existingSize,
+  if (totalBytes > 0) {
+    emitProgress(onProgress, {
+      bytesReceived: initialBytes,
       contentLength: totalBytes,
-      percentage: Math.round((existingSize / totalBytes) * 100),
+      detail: resumeSupported ? 'Resuming download' : 'Downloading official package',
+      label: 'Downloading',
+      percentage: Math.round((initialBytes / totalBytes) * 100),
+      stage: 'downloading',
       url,
     })
   }
@@ -77,11 +112,14 @@ export async function downloadFile(
     readable.on('data', (chunk: Buffer) => {
       receivedBytes += chunk.length
 
-      if (onProgress && totalBytes > 0) {
-        onProgress({
+      if (totalBytes > 0) {
+        emitProgress(onProgress, {
           bytesReceived: receivedBytes,
           contentLength: totalBytes,
+          detail: resumeSupported ? 'Resuming download' : 'Downloading official package',
+          label: 'Downloading',
           percentage: Math.round((receivedBytes / totalBytes) * 100),
+          stage: 'downloading',
           url,
         })
       }
@@ -94,6 +132,17 @@ export async function downloadFile(
   })
 
   await fs.rename(tempFilePath, destination)
+
+  const finalSize = statSync(destination).size
+  emitProgress(onProgress, {
+    bytesReceived: finalSize,
+    contentLength: finalSize,
+    detail: 'Package download finished',
+    label: 'Package ready',
+    percentage: 100,
+    stage: 'completed',
+    url,
+  })
 
   return destination
 }
