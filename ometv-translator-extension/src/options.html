@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OmeTV Translator Bridge Settings</title>
+    <link rel="stylesheet" href="./options.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="card">
+        <p class="eyebrow">OmeTV Translator Bridge</p>
+        <h1>Extension Settings</h1>
+        <p class="intro">
+          This project is designed for open-source self-hosted usage. Every user brings their own compatible AI API.
+        </p>
+
+        <form id="settings-form" class="settings-form">
+          <label class="field">
+            <span>Enable extension</span>
+            <input id="enabled" type="checkbox" />
+          </label>
+
+          <label class="field">
+            <span>API base URL</span>
+            <input id="apiBaseUrl" type="url" placeholder="https://api.openai.com/v1" />
+          </label>
+
+          <label class="field">
+            <span>API key</span>
+            <input id="apiKey" type="password" placeholder="sk-..." autocomplete="off" />
+          </label>
+
+          <label class="field">
+            <span>Model</span>
+            <input id="model" type="text" placeholder="gpt-4.1-mini" />
+          </label>
+
+          <label class="field">
+            <span>Your native language</span>
+            <input id="nativeLanguage" type="text" placeholder="Chinese (Simplified)" />
+          </label>
+
+          <label class="field checkbox-field">
+            <input id="translateIncoming" type="checkbox" />
+            <span>Translate incoming messages into my language</span>
+          </label>
+
+          <label class="field checkbox-field">
+            <input id="translateOutgoing" type="checkbox" />
+            <span>Translate my messages before sending</span>
+          </label>
+
+          <label class="field checkbox-field">
+            <input id="showOriginalText" type="checkbox" />
+            <span>Show original text next to translations</span>
+          </label>
+
+          <label class="field checkbox-field">
+            <input id="autoPlayTranslatedSpeech" type="checkbox" />
+            <span>Reserve speech playback mode for a future version</span>
+          </label>
+
+          <label class="field checkbox-field">
+            <input id="debugMode" type="checkbox" />
+            <span>Enable debug logs on the OmeTV page</span>
+          </label>
+
+          <div class="actions">
+            <button type="submit">Save Settings</button>
+            <p id="status" class="status" aria-live="polite"></p>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <script type="module" src="./options.js"></script>
+  </body>
+</html>
