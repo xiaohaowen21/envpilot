@@ -23,7 +23,7 @@ function CollapsibleSection({
           {badge ? <span className="source-tag">{badge}</span> : null}
         </div>
         <span aria-hidden="true" className="accordion-caret">
-          ▾
+          {open ? '-' : '+'}
         </span>
       </button>
 
