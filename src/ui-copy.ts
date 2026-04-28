@@ -89,7 +89,7 @@ export const uiCopy = {
       dockerVersionUnknown: '尚未返回 Docker 版本信息',
       enableFeature: '启用功能',
       featureVersionUnknown: 'Windows 功能本身不提供独立版本号',
-      heroDescription: '把 Windows 功能 与 独立桌面软件 分开管理，减少“关闭”和“卸载”混淆。',
+      heroDescription: '把 Windows 功能 与 独立桌面软件 分开管理，减少"关闭"和"卸载"混淆。',
       hypervDescription: '管理 Hyper-V，适合虚拟机、隔离环境与企业级开发场景。',
       infoTitle: '平台能力管理',
       processing: '处理中…',
@@ -128,6 +128,7 @@ export const uiCopy = {
       registryCount: (count: number) => `注册表记录 ${count}`,
       registryEmpty: '没有识别到这类软件的系统安装记录。',
       registrySection: '系统安装记录',
+      searchPlaceholder: '搜索软件名称、运行时或发布者…',
       uninstallSoftware: '卸载软件',
     },
     variables: {
@@ -138,7 +139,7 @@ export const uiCopy = {
       cleanupPreview: '自动整理预览',
       cleanupPreviewNote: '先预览，再一键执行。',
       heroDescription: '扫描 PATH 风险、清理冗余条目，并保留环境变量回滚点。',
-      noCleanupPreview: '先点击“重新生成预览”，再决定是否执行自动整理。',
+      noCleanupPreview: '先点击"重新生成预览"，再决定是否执行自动整理。',
       noIssues: '暂未发现明显问题',
       pathEntry: 'PATH 项',
       pathIssue: '问题类型',
@@ -146,22 +147,27 @@ export const uiCopy = {
       pendingCount: (count: number) => `${count} 项待处理`,
       rebuildPreview: '重新生成预览',
       removableSuggestion: '建议删除',
+      suggestedFixes: '建议修复',
       scope: '范围',
     },
     versions: {
       autoManagedLabel: '自动化安装与切换',
       autoManagedRuntimeFlow:
-        '这里的“安装”会自动下载官方包、解压到 D 盘、写入环境变量，并建立统一入口，无需手动找目录。',
+        '这里的"安装"会自动下载官方包、解压到 D 盘、写入环境变量，并建立统一入口，无需手动找目录。',
       autoManagedRuntimeNote:
         'Java 会自动维护 JAVA_HOME；Go、Node.js、Python、PHP、Rust 会自动处理 PATH 或相关变量。',
       cleanupArchive: '安装成功后清理缓存压缩包',
       cleanupArchiveHint: '默认开启，避免 D:\\EnvPilot\\downloads 留下过多 zip / exe 缓存。',
       detectedInstalls: '系统已识别安装',
+      environmentBindings: '环境变量与入口',
+      environmentBindingsBadge: (count: number) => `${count} 项绑定`,
+      environmentBindingsNotActive: '未激活',
       install: '安装',
       installing: '安装中…',
       managedCount: (count: number) => `${count} 个托管版本`,
       managedEmpty: '当前还没有由 EnvPilot 管理的版本。',
       managedVersions: 'EnvPilot 托管版本',
+      noActiveVersionTip: '当前还没有激活版本，所以还不会写入该语言的入口和环境变量。',
       noSystemRecord: '没有发现系统安装记录，但仍可能通过命令行可用。',
       selectedVendor: 'Java 发行方',
       sharedEntryPointHint: '当前激活版本会被统一映射到这个固定入口。',
@@ -173,6 +179,12 @@ export const uiCopy = {
       uninstalling: '卸载中…',
       vendorHint: '你可以按发行方安装 Java，同一大版本可并存。',
       versionCatalog: '可安装版本目录',
+      workflowStep1Title: '官方包获取',
+      workflowStep1Description: '统一从官方源下载，可复用缓存，并把下载与安装状态拆开显示。',
+      workflowStep2Title: '托管安装目录',
+      workflowStep2Description: '运行时会落到 D 盘托管目录，并通过稳定入口做版本切换。',
+      workflowStep3Title: '环境变量生效',
+      workflowStep3Description: '安装完成后会同步入口、PATH 以及对应语言变量，并立即刷新当前进程。',
     },
     workspace: {
       overview: { description: '查看系统基线、目录、备份与最近日志', title: '总览' },
@@ -182,6 +194,113 @@ export const uiCopy = {
       variables: { description: '扫描、修复并回滚环境变量与 PATH 风险', title: '变量治理' },
       versions: { description: '安装、切换并托管多版本运行时', title: '多版本运行时' },
     },
+
+    // --- Previously inline i18n entries (moved from App.tsx ternaries) ---
+
+    progress: {
+      workingTitle: '正在处理当前任务',
+      workingDetail: '正在刷新下载、安装或环境变量步骤。',
+      processing: '处理中',
+    },
+
+    confirm: {
+      actionType: '操作类型',
+      target: '目标对象',
+      uninstallProgram: {
+        actionLabel: '卸载软件',
+        confirmLabel: '确认卸载',
+        description: '这会调用 Windows 中登记的原始卸载程序，并按该软件自己的卸载流程执行。',
+        title: '确认卸载软件',
+      },
+      uninstallRuntime: {
+        actionLabel: '卸载托管版本',
+        confirmLabel: '确认卸载版本',
+        description: '这会删除 EnvPilot 托管目录中的该版本文件，并同步清理当前版本切换记录。',
+        title: '确认卸载托管版本',
+      },
+      uninstallDocker: {
+        actionLabel: '卸载 Docker Desktop',
+        confirmLabel: '确认卸载 Docker Desktop',
+        description: '这会触发 Docker Desktop 自身的卸载流程，Windows 功能开关不会被一并移除。',
+        title: '确认卸载 Docker Desktop',
+      },
+      disableFeature: {
+        actionLabel: '关闭系统功能',
+        confirmLabel: '确认关闭功能',
+        description: '这会关闭对应的 Windows 功能。执行后可能需要重启系统。',
+        title: '确认关闭系统功能',
+      },
+    },
+
+    settings: {
+      storageTitle: '存储设置',
+      workingDirectoryLabel: '工作目录',
+      workingDirectoryPlaceholder: '留空使用默认路径',
+      workingDirectoryHint: 'EnvPilot 将在此目录下存储运行时、下载缓存和备份文件。',
+      cleanupArchiveLabel: '安装后清理下载缓存',
+      cleanupArchiveHint: '避免 D:\\EnvPilot\\downloads 留下过多 zip / exe 缓存。',
+      proxyTitle: '代理设置',
+      proxyEnabledLabel: '启用代理',
+      proxyEnabledHint: '通过代理服务器下载安装包。',
+      proxyServerLabel: '代理服务器',
+      usernameLabel: '用户名',
+      usernamePlaceholder: '可选',
+      passwordLabel: '密码',
+      passwordPlaceholder: '可选',
+      appearanceTitle: '外观设置',
+      themeLabel: '主题',
+      themeLight: '浅色',
+      themeDark: '深色',
+      themeSystem: '跟随系统',
+      languageLabel: '语言',
+      aboutTitle: '关于',
+      aboutVersion: '版本',
+      aboutDescription: 'Windows 环境自动化配置工具',
+      configImportTitle: '配置导入/导出',
+      configImportDescription: '导出当前配置到文件，或从文件导入配置。',
+      exportConfig: '导出配置',
+      exportingConfig: '导出中…',
+      configExported: '配置已导出',
+      importConfig: '导入配置',
+      importingConfig: '导入中…',
+      operationLogsTitle: '操作日志',
+      clearLogs: '清除日志',
+      clearingLogs: '清除中…',
+      noLogs: '暂无操作日志',
+      backupManagementTitle: '备份管理',
+      noBackups: '暂无备份记录',
+      restoreBackup: '恢复',
+      deleteBackup: '删除',
+      restoreConfirmTitle: '确认恢复备份',
+      restoreConfirmLabel: '确认恢复',
+      restoreConfirmDescription: '这会将环境变量恢复到该备份时的状态。',
+      restoreConfirmAction: '恢复备份',
+      deleteConfirmTitle: '确认删除备份',
+      deleteConfirmLabel: '确认删除',
+      deleteConfirmDescription: '这会永久删除该备份文件。',
+      deleteConfirmAction: '删除备份',
+      diagnosticsTitle: '环境诊断',
+      runDiagnostics: '运行诊断',
+      diagnosing: '诊断中…',
+      noDiagnostics: '点击"运行诊断"检查系统环境状态',
+      diagnosticCategorySystem: '系统信息',
+      diagnosticCategoryStorage: '存储路径',
+      diagnosticCategoryEnvironment: '环境变量',
+      diagnosticCategoryRuntimes: '运行时检测',
+      diagnosticCategoryNetwork: '网络连接',
+      saveSettings: '保存设置',
+      savingSettings: '保存中…',
+    },
+
+    platformVersion: '版本',
+
+    // Sidebar metrics (previously inline)
+    softwareCountMetric: (count: number) => `${count} 项软件记录`,
+    platformActiveMetric: (count: number) => `${count} 项已启用`,
+    settingsConfigMetric: '配置管理',
+
+    // Docker install label (previously inline in getToolInstallLabel)
+    installDockerDesktop: '安装 Docker Desktop',
   },
   'en-US': {
     autoCleanup: 'Run auto cleanup',
@@ -278,6 +397,7 @@ export const uiCopy = {
       registryCount: (count: number) => `Registry records ${count}`,
       registryEmpty: 'No matching system install record was detected.',
       registrySection: 'System install records',
+      searchPlaceholder: 'Search software name, runtime, or publisher…',
       uninstallSoftware: 'Uninstall software',
     },
     variables: {
@@ -296,6 +416,7 @@ export const uiCopy = {
       pendingCount: (count: number) => `${count} items pending`,
       rebuildPreview: 'Regenerate preview',
       removableSuggestion: 'Suggested removals',
+      suggestedFixes: 'Suggested fixes',
       scope: 'Scope',
     },
     versions: {
@@ -307,11 +428,15 @@ export const uiCopy = {
       cleanupArchive: 'Delete cached archive after a successful install',
       cleanupArchiveHint: 'Enabled by default so `D:\\EnvPilot\\downloads` does not keep too many zip or exe files.',
       detectedInstalls: 'Detected installations',
+      environmentBindings: 'Environment bindings',
+      environmentBindingsBadge: (count: number) => `${count} bindings`,
+      environmentBindingsNotActive: 'Not active',
       install: 'Install',
       installing: 'Installing…',
       managedCount: (count: number) => `${count} managed versions`,
       managedEmpty: 'No EnvPilot-managed version is installed yet.',
       managedVersions: 'EnvPilot-managed versions',
+      noActiveVersionTip: 'No managed version is active yet, so EnvPilot is not writing bindings for this runtime.',
       noSystemRecord: 'No system install record was found, but the runtime may still be available from the command line.',
       selectedVendor: 'Java vendor',
       sharedEntryPointHint: 'The active version is always mapped to this stable path.',
@@ -323,6 +448,12 @@ export const uiCopy = {
       uninstalling: 'Uninstalling…',
       vendorHint: 'Choose the Java distribution vendor before installing each version.',
       versionCatalog: 'Available versions',
+      workflowStep1Title: 'Official package',
+      workflowStep1Description: 'Downloads come from official sources, can reuse cached packages, and now show download and install as separate stages.',
+      workflowStep2Title: 'Managed install directory',
+      workflowStep2Description: 'Runtimes land in the managed directory on drive D and switch through a stable entry point.',
+      workflowStep3Title: 'Environment activation',
+      workflowStep3Description: 'After install, EnvPilot refreshes entry points, PATH, and language-specific variables immediately.',
     },
     workspace: {
       overview: { description: 'Review system baseline, directories, backups, and logs', title: 'Overview' },
@@ -332,8 +463,115 @@ export const uiCopy = {
       variables: { description: 'Scan, repair, and roll back PATH and environment issues', title: 'Variable Governance' },
       versions: { description: 'Install, switch, and manage multiple runtime versions', title: 'Runtime Versions' },
     },
+
+    // --- Previously inline i18n entries ---
+
+    progress: {
+      workingTitle: 'Working on the current task',
+      workingDetail: 'Refreshing download, install, or environment steps.',
+      processing: 'Working',
+    },
+
+    confirm: {
+      actionType: 'Action type',
+      target: 'Target',
+      uninstallProgram: {
+        actionLabel: 'Uninstall software',
+        confirmLabel: 'Confirm uninstall',
+        description: 'This runs the uninstall command registered in Windows and follows that software\'s own removal flow.',
+        title: 'Confirm software removal',
+      },
+      uninstallRuntime: {
+        actionLabel: 'Remove managed version',
+        confirmLabel: 'Confirm remove',
+        description: 'This removes the selected runtime files from EnvPilot storage and updates the active-version mapping.',
+        title: 'Confirm managed version removal',
+      },
+      uninstallDocker: {
+        actionLabel: 'Uninstall Docker Desktop',
+        confirmLabel: 'Confirm Docker removal',
+        description: 'This triggers Docker Desktop\'s own uninstall flow. Windows feature switches are managed separately.',
+        title: 'Confirm Docker Desktop removal',
+      },
+      disableFeature: {
+        actionLabel: 'Disable Windows feature',
+        confirmLabel: 'Confirm disable',
+        description: 'This disables the selected Windows feature. A reboot may be required.',
+        title: 'Confirm Windows feature disable',
+      },
+    },
+
+    settings: {
+      storageTitle: 'Storage Settings',
+      workingDirectoryLabel: 'Working Directory',
+      workingDirectoryPlaceholder: 'Leave empty for default path',
+      workingDirectoryHint: 'EnvPilot stores runtimes, downloads, and backups in this directory.',
+      cleanupArchiveLabel: 'Clean download cache after install',
+      cleanupArchiveHint: 'Prevents D:\\EnvPilot\\downloads from accumulating too many zip/exe files.',
+      proxyTitle: 'Proxy Settings',
+      proxyEnabledLabel: 'Enable Proxy',
+      proxyEnabledHint: 'Download packages through a proxy server.',
+      proxyServerLabel: 'Proxy Server',
+      usernameLabel: 'Username',
+      usernamePlaceholder: 'Optional',
+      passwordLabel: 'Password',
+      passwordPlaceholder: 'Optional',
+      appearanceTitle: 'Appearance',
+      themeLabel: 'Theme',
+      themeLight: 'Light',
+      themeDark: 'Dark',
+      themeSystem: 'System',
+      languageLabel: 'Language',
+      aboutTitle: 'About',
+      aboutVersion: 'Version',
+      aboutDescription: 'Windows environment automation tool',
+      configImportTitle: 'Config Import/Export',
+      configImportDescription: 'Export current config to file, or import config from file.',
+      exportConfig: 'Export Config',
+      exportingConfig: 'Exporting…',
+      configExported: 'Config exported',
+      importConfig: 'Import Config',
+      importingConfig: 'Importing…',
+      operationLogsTitle: 'Operation Logs',
+      clearLogs: 'Clear Logs',
+      clearingLogs: 'Clearing…',
+      noLogs: 'No operation logs',
+      backupManagementTitle: 'Backup Management',
+      noBackups: 'No backup records',
+      restoreBackup: 'Restore',
+      deleteBackup: 'Delete',
+      restoreConfirmTitle: 'Confirm backup restore',
+      restoreConfirmLabel: 'Confirm restore',
+      restoreConfirmDescription: 'This will restore environment variables to the state at the time of the backup.',
+      restoreConfirmAction: 'Restore backup',
+      deleteConfirmTitle: 'Confirm backup delete',
+      deleteConfirmLabel: 'Confirm delete',
+      deleteConfirmDescription: 'This will permanently delete the backup file.',
+      deleteConfirmAction: 'Delete backup',
+      diagnosticsTitle: 'Environment Diagnostics',
+      runDiagnostics: 'Run Diagnostics',
+      diagnosing: 'Diagnosing…',
+      noDiagnostics: 'Click "Run Diagnostics" to check system environment status',
+      diagnosticCategorySystem: 'System Info',
+      diagnosticCategoryStorage: 'Storage Paths',
+      diagnosticCategoryEnvironment: 'Environment Variables',
+      diagnosticCategoryRuntimes: 'Runtime Detection',
+      diagnosticCategoryNetwork: 'Network',
+      saveSettings: 'Save Settings',
+      savingSettings: 'Saving…',
+    },
+
+    platformVersion: 'Version',
+
+    // Sidebar metrics (previously inline)
+    softwareCountMetric: (count: number) => `${count} detected apps`,
+    platformActiveMetric: (count: number) => `${count} active items`,
+    settingsConfigMetric: 'Configuration',
+
+    // Docker install label (previously inline in getToolInstallLabel)
+    installDockerDesktop: 'Install Docker Desktop',
   },
-}
+} as const
 
 export function getInitialLocale(): Locale {
   if (typeof window === 'undefined') {
@@ -369,10 +607,7 @@ export function getWorkspaceCards(dashboard: DashboardData, locale: Locale): Wor
       description: copy.workspace.software.description,
       group: 'core',
       id: 'software',
-      metric:
-        locale === 'zh-CN'
-          ? `${dashboard.installedPrograms.length} 项软件记录`
-          : `${dashboard.installedPrograms.length} detected apps`,
+      metric: copy.softwareCountMetric(dashboard.installedPrograms.length),
       title: copy.workspace.software.title,
     },
     {
@@ -386,7 +621,7 @@ export function getWorkspaceCards(dashboard: DashboardData, locale: Locale): Wor
       description: copy.workspace.platform.description,
       group: 'core',
       id: 'platform',
-      metric: locale === 'zh-CN' ? `${toolCount} 项已启用` : `${toolCount} active items`,
+      metric: copy.platformActiveMetric(toolCount),
       title: copy.workspace.platform.title,
     },
     {
@@ -400,7 +635,7 @@ export function getWorkspaceCards(dashboard: DashboardData, locale: Locale): Wor
       description: copy.workspace.settings.description,
       group: 'governance',
       id: 'settings',
-      metric: locale === 'zh-CN' ? '配置管理' : 'Configuration',
+      metric: copy.settingsConfigMetric,
       title: copy.workspace.settings.title,
     },
   ]
@@ -430,7 +665,7 @@ export function getToolStatusLabel(tool: SystemToolSummary, locale: Locale): str
 
 export function getToolInstallLabel(tool: SystemToolSummary, locale: Locale): string {
   const copy = uiCopy[locale]
-  return isWindowsFeature(tool) ? copy.platform.enableFeature : 'Install Docker Desktop'
+  return isWindowsFeature(tool) ? copy.platform.enableFeature : copy.installDockerDesktop
 }
 
 export function getToolUninstallLabel(tool: SystemToolSummary, locale: Locale): string {

@@ -1,142 +1,162 @@
 :root {
-  --text: #566270;
-  --text-strong: #1f2c38;
-  --muted: #778390;
-  --muted-strong: #5f6b79;
-  --bg: #edf1f5;
-  --surface: #f8fafc;
-  --surface-strong: #ffffff;
-  --border: rgba(119, 131, 144, 0.18);
-  --border-strong: rgba(95, 107, 121, 0.28);
-  --code-bg: #eef3f7;
-  --accent: #5f7690;
-  --accent-soft: rgba(95, 118, 144, 0.12);
-  --success-soft: #edf6f1;
-  --warning-soft: #fbf5e9;
-  --danger-soft: #fcf0f0;
-  --shadow:
-    rgba(19, 29, 40, 0.05) 0 24px 60px -34px,
-    rgba(19, 29, 40, 0.05) 0 10px 24px -18px;
-  --sans:
-    'Segoe UI Variable Text',
-    'Segoe UI',
-    'Microsoft YaHei UI',
-    'PingFang SC',
-    system-ui,
-    sans-serif;
-  --heading:
-    'Segoe UI Variable Display',
-    'Segoe UI',
-    'Microsoft YaHei UI',
-    'PingFang SC',
-    system-ui,
-    sans-serif;
-  --mono: ui-monospace, SFMono-Regular, Consolas, monospace;
-  font: 16px/1.72 var(--sans);
-  letter-spacing: 0;
-  color: var(--text);
-  background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.9), transparent 28%),
-    linear-gradient(180deg, #f4f7fa 0%, #ecf1f5 100%);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* ── Brand Colors (Indigo) ── */
+  --brand-50: #eef2ff;
+  --brand-100: #e0e7ff;
+  --brand-200: #c7d2fe;
+  --brand-300: #a5b4fc;
+  --brand-400: #818cf8;
+  --brand-500: #6366f1;
+  --brand-600: #4f46e5;
+  --brand-700: #4338ca;
+  --brand-800: #3730a3;
+  --brand-900: #312e81;
+
+  /* ── Neutrals ── */
+  --neutral-25: #fcfcfd;
+  --neutral-50: #f9fafb;
+  --neutral-100: #f3f4f6;
+  --neutral-200: #e5e7eb;
+  --neutral-300: #d1d5db;
+  --neutral-400: #9ca3af;
+  --neutral-500: #6b7280;
+  --neutral-600: #4b5563;
+  --neutral-700: #374151;
+  --neutral-800: #1f2937;
+  --neutral-900: #111827;
+
+  /* ── Semantic: Text ── */
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-tertiary: #9ca3af;
+  --text-inverse: #f9fafb;
+
+  /* ── Semantic: Background ── */
+  --bg-page: #f3f4f6;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+  --bg-elevated: #ffffff;
+
+  /* ── Semantic: Borders ── */
+  --border-default: #e5e7eb;
+  --border-subtle: #f3f4f6;
+  --border-strong: #d1d5db;
+  --border-focus: rgba(99, 102, 241, 0.4);
+
+  /* ── Status Colors ── */
+  --success-primary: #10b981;
+  --success-50: #ecfdf5;
+  --success-600: #059669;
+
+  --warning-primary: #f59e0b;
+  --warning-50: #fffbeb;
+  --warning-600: #d97706;
+
+  --danger-primary: #ef4444;
+  --danger-50: #fef2f2;
+  --danger-600: #dc2626;
+
+  /* ── Shadows ── */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+
+  /* ── Typography ── */
+  --font-sans: 'Inter', 'Segoe UI Variable Text', 'Segoe UI', 'Microsoft YaHei UI', 'PingFang SC', system-ui, sans-serif;
+  --font-heading: 'Inter', 'Segoe UI Variable Display', 'Segoe UI', 'Microsoft YaHei UI', 'PingFang SC', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+
+  /* ── Spacing (4px base) ── */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* ── Border Radius ── */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-full: 9999px;
+
+  /* ── Transitions ── */
+  --transition-fast: 0.12s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* ── Component Tokens ── */
+  --sidebar-width: 264px;
+  --header-height: auto;
+  --panel-padding: 20px;
+  --card-padding: 16px;
 }
 
+/* ── Dark Theme ── */
 [data-theme="dark"] {
-  --text: #bcc7d2;
-  --text-strong: #ebf0f5;
-  --muted: #94a0ad;
-  --muted-strong: #a7b3bf;
-  --bg: #18202a;
-  --surface: #212b36;
-  --surface-strong: #26313d;
-  --border: rgba(220, 228, 235, 0.12);
-  --border-strong: rgba(220, 228, 235, 0.2);
-  --code-bg: #2a3642;
-  --accent: #86a2bf;
-  --accent-soft: rgba(134, 162, 191, 0.16);
-  --success-soft: rgba(71, 117, 91, 0.22);
-  --warning-soft: rgba(146, 118, 69, 0.22);
-  --danger-soft: rgba(150, 84, 84, 0.24);
-  --shadow:
-    rgba(0, 0, 0, 0.28) 0 28px 64px -36px,
-    rgba(0, 0, 0, 0.24) 0 10px 24px -18px;
-  background:
-    radial-gradient(circle at top left, rgba(63, 80, 97, 0.16), transparent 24%),
-    linear-gradient(180deg, #18202a 0%, #141b23 100%);
-}
+  --brand-400: #818cf8;
+  --brand-500: #6366f1;
+  --brand-600: #4f46e5;
 
-* {
-  box-sizing: border-box;
-}
+  --neutral-25: #1a1d23;
+  --neutral-50: #1f2330;
+  --neutral-100: #2a2e3d;
+  --neutral-200: #363a4c;
+  --neutral-300: #4a4f63;
+  --neutral-400: #6b7089;
+  --neutral-500: #8b90a6;
+  --neutral-600: #a8acb8;
+  --neutral-700: #c4c7d0;
+  --neutral-800: #e0e2e8;
+  --neutral-900: #f0f1f4;
 
-html,
-body,
-#root {
-  min-height: 100%;
-}
+  --text-primary: #f0f1f4;
+  --text-secondary: #a8acb8;
+  --text-tertiary: #6b7089;
+  --text-inverse: #1f2330;
 
-#root {
-  margin: 0 auto;
-  min-height: 100vh;
-  width: min(1680px, 100%);
-}
+  --bg-page: #12141a;
+  --bg-primary: #1a1d23;
+  --bg-secondary: #1f2330;
+  --bg-tertiary: #2a2e3d;
+  --bg-elevated: #242836;
 
-body {
-  background: var(--bg);
-  margin: 0;
-  min-width: 360px;
-}
+  --border-default: #2a2e3d;
+  --border-subtle: #1f2330;
+  --border-strong: #363a4c;
+  --border-focus: rgba(129, 140, 248, 0.4);
 
-h1,
-h2,
-h3,
-strong {
-  color: var(--text-strong);
-}
+  --success-50: rgba(16, 185, 129, 0.12);
+  --warning-50: rgba(245, 158, 11, 0.12);
+  --danger-50: rgba(239, 68, 68, 0.12);
 
-h1,
-h2,
-h3 {
-  font-family: var(--heading);
-  font-weight: 700;
-  margin: 0;
-}
-
-h1 {
-  font-size: 38px;
-  letter-spacing: -0.03em;
-  line-height: 1.18;
-}
-
-h2 {
-  font-size: 24px;
-  letter-spacing: -0.02em;
-  line-height: 1.32;
-}
-
-h3 {
-  font-size: 18px;
-  line-height: 1.4;
-}
-
-p {
-  margin: 0;
-}
-
-a {
-  color: inherit;
-}
-
-code {
-  background: var(--code-bg);
-  border-radius: 10px;
-  color: var(--text-strong);
-  display: inline-flex;
-  font-family: var(--mono);
-  font-size: 14px;
-  line-height: 1.45;
-  padding: 5px 9px;
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.35), 0 4px 6px -4px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.25);
 }
