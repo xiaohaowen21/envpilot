@@ -1,5 +1,6 @@
 import path from 'node:path'
 
+// @wen — EnvPilot main process
 import { BrowserWindow, Menu, Notification, Tray, app, globalShortcut, ipcMain, nativeImage } from 'electron'
 
 import type { DashboardData, DownloadProgress, InstallRuntimeOptions, ManagedRuntimeKey } from '../shared/contracts'

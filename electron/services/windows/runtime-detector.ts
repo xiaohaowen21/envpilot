@@ -2,6 +2,8 @@ import { execFile } from 'node:child_process'
 
 import type { RuntimeKey, RuntimeSummary } from '../../../shared/contracts'
 
+// === @wen runtime probe helpers ===
+
 interface RuntimeProbe {
   key: RuntimeKey
   label: string

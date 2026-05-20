@@ -1,3 +1,5 @@
+// @wen
+// shared contract definitions
 export type RuntimeKey =
   | 'java'
   | 'python'

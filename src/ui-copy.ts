@@ -3,7 +3,7 @@ import type {
   JavaVendor,
   PathIssueType,
   SystemToolSummary,
-} from '../shared/contracts'
+} from '../shared/contracts' // @wen
 
 export type Locale = 'zh-CN' | 'en-US'
 export type WorkspaceId = 'overview' | 'software' | 'versions' | 'platform' | 'variables' | 'settings'
