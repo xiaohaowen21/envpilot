@@ -3,8 +3,13 @@ import { createEnvironmentBackup } from './env-manager'
 import { appendOperationLog } from './operation-log'
 import { runPowerShell, runPowerShellJson } from './powershell'
 
-function escapeForSingleQuotes(value: string): string {
-  return value.replace(/'/g, "''")
+/**
+ * 使用 PowerShell here-string (@'...'@) 安全转义字符串。
+ * here-string 内所有字符都是字面量，无需转义特殊字符。
+ * 唯一需要处理的是字符串中如果包含 '@，替换为 '@''
+ */
+export function toPowerShellHereString(value: string): string {
+  return `@'\n${value.replace(/'@/g, "'@''")}\n'@`
 }
 
 function normalizeMsiexecCommand(command: string): string {
@@ -131,7 +136,7 @@ export async function uninstallInstalledProgram(programId: string): Promise<Oper
 
   try {
     await runPowerShell(
-      `Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', '${escapeForSingleQuotes(command)}' -Wait`,
+      `Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', ${toPowerShellHereString(command)} -Wait`,
     )
 
     await appendOperationLog({

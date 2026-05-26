@@ -14,6 +14,17 @@ async function getLogFilePath(): Promise<string> {
 export async function appendOperationLog(entry: OperationLogEntry): Promise<void> {
   const filePath = await getLogFilePath()
   await fs.mkdir(path.dirname(filePath), { recursive: true })
+
+  try {
+    const stat = await fs.stat(filePath)
+
+    if (stat.size > 5 * 1024 * 1024) {
+      await fs.rename(filePath, `${filePath}.1`)
+    }
+  } catch {
+    // File does not exist yet — first write.
+  }
+
   await fs.appendFile(filePath, `${JSON.stringify(entry)}\n`, 'utf8')
 }
 

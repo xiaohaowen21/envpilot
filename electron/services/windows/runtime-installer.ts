@@ -160,6 +160,8 @@ function wait(milliseconds: number): Promise<void> {
   })
 }
 
+const _progressThrottle = { lastEmit: 0 }
+
 function emitProgressStage(
   onProgress: ProgressCallback | undefined,
   stage:
@@ -173,6 +175,13 @@ function emitProgressStage(
   detail: string,
   url = '',
 ): void {
+  const now = Date.now()
+
+  if (stage !== 'completed' && now - _progressThrottle.lastEmit < 100) {
+    return
+  }
+
+  _progressThrottle.lastEmit = now
   onProgress?.({
     bytesReceived: 0,
     contentLength: 0,

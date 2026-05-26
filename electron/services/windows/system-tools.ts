@@ -6,6 +6,7 @@ import { getStoragePaths } from './env-manager'
 import { downloadFile, type ProgressCallback } from './http-client'
 import { appendOperationLog } from './operation-log'
 import { runPowerShell, runPowerShellJson } from './powershell'
+import { toPowerShellHereString } from './installed-programs'
 
 interface WindowsOptionalFeature {
   FeatureName: string
@@ -201,8 +202,7 @@ function normalizeMsiexecCommand(command: string): string {
 }
 
 async function runCommandThroughCmd(command: string): Promise<void> {
-  const escaped = command.replace(/'/g, "''")
-  await runPowerShell(`Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', '${escaped}' -Wait`)
+  await runPowerShell(`Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', ${toPowerShellHereString(command)} -Wait`)
 }
 
 export async function getSystemToolSummaries(): Promise<SystemToolSummary[]> {

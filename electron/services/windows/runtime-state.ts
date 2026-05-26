@@ -171,7 +171,13 @@ export async function readRuntimeState(): Promise<RuntimeStateFile> {
   }
 
   const content = await fs.readFile(filePath, 'utf8')
-  const parsed = JSON.parse(content) as Partial<RuntimeStateFile>
+  let parsed: Partial<RuntimeStateFile>
+
+  try {
+    parsed = JSON.parse(content) as Partial<RuntimeStateFile>
+  } catch {
+    return structuredClone(EMPTY_STATE)
+  }
 
   return normalizeStateFile(parsed)
 }

@@ -86,6 +86,7 @@ async function createMainWindow() {
     title: 'EnvPilot Windows MVP',
     webPreferences: {
       contextIsolation: true,
+      sandbox: true,
       nodeIntegration: false,
       preload: path.join(__dirname, 'preload.cjs'),
     },
@@ -237,14 +238,16 @@ app.whenReady().then(async () => {
   await createMainWindow()
   createTray()
 
-  globalShortcut.register('CommandOrControl+Shift+E', () => {
+  if (!globalShortcut.register('CommandOrControl+Shift+E', () => {
     if (mainWindow) {
       mainWindow.show()
       mainWindow.focus()
     }
-  })
+  })) {
+    console.warn('[EnvPilot] Global shortcut CommandOrControl+Shift+E registration failed: key conflict with another application.')
+  }
 
-  globalShortcut.register('CommandOrControl+Shift+B', async () => {
+  if (!globalShortcut.register('CommandOrControl+Shift+B', async () => {
     try {
       await createEnvironmentBackup()
       mainWindow?.webContents.send('backup:completed')
@@ -255,7 +258,9 @@ app.whenReady().then(async () => {
     } catch (error) {
       console.error('Backup failed:', error)
     }
-  })
+  })) {
+    console.warn('[EnvPilot] Global shortcut CommandOrControl+Shift+B registration failed: key conflict with another application.')
+  }
 
   app.on('activate', async () => {
     if (BrowserWindow.getAllWindows().length === 0) {

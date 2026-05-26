@@ -76,12 +76,25 @@ export async function downloadFile(
     url,
   })
 
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 300000)
+
   const response = await fetch(url, {
     headers: {
       ...(existingPartSize > 0 ? { Range: `bytes=${existingPartSize}-` } : {}),
       'User-Agent': 'EnvPilot/0.1.0',
     },
+    signal: controller.signal,
+  }).catch((error) => {
+    clearTimeout(timeoutId)
+
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('Download timed out after 5 minutes.')
+    }
+
+    throw error
   })
+  clearTimeout(timeoutId)
 
   if (!(response.ok || response.status === 206) || !response.body) {
     throw new Error(`Download failed: ${response.status} ${response.statusText}`)

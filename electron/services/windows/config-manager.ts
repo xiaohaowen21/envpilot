@@ -6,11 +6,17 @@ import { app } from 'electron'
 
 import type { AppConfig, OperationResult } from '../../../shared/contracts'
 
+function getDefaultStorageRoot(): string {
+  // 优先使用 D 盘（开发环境常见），否则 fallback 到 userData
+  const dRoot = 'D:\\EnvPilot'
+  return existsSync('D:\\') ? dRoot : app.getPath('userData')
+}
+
 const DEFAULT_CONFIG: AppConfig = {
   downloadCleanupEnabled: true,
   language: 'zh-CN',
   proxyEnabled: false,
-  storageRoot: existsSync('D:\\') ? 'D:\\EnvPilot' : '',
+  storageRoot: getDefaultStorageRoot(),
   theme: 'system',
 }
 
@@ -84,5 +90,6 @@ export async function importConfig(data: string): Promise<OperationResult> {
 }
 
 export function resolveStorageRoot(config: AppConfig): string {
-  return config.storageRoot || (existsSync('D:\\') ? 'D:\\EnvPilot' : app.getPath('userData'))
+  // 如果用户手动清空了 storageRoot，也用兜底值
+  return config.storageRoot || getDefaultStorageRoot()
 }
