@@ -510,6 +510,7 @@ async function syncManagedEnvironment(): Promise<void> {
   const desiredUserPath = composeManagedPath(rootDir, userPath, activeRuntimeKeys)
   const desiredProcessPath = mergePathValues(desiredUserPath, machinePath)
 
+  // 创建或更新所有运行时的符号链接
   for (const runtime of Object.keys(runtimeConfigMap) as ManagedRuntimeKey[]) {
     const activeVersion = state.runtimes[runtime].find((item) => item.isActive)
     const linkPath = getRuntimePaths(runtime, rootDir).linkPath
@@ -521,17 +522,40 @@ async function syncManagedEnvironment(): Promise<void> {
     }
   }
 
-  await runPowerShell(
-    `
+  // 构建环境变量设置脚本
+  const envScript = `
+# 设置 PATH
 [Environment]::SetEnvironmentVariable('Path', @'
 ${escapeForPowerShellHereString(desiredUserPath)}
 '@, 'User')
-${buildEnvironmentAssignments(rootDir, state)}
-`,
-  )
 
+# 设置其他环境变量
+${buildEnvironmentAssignments(rootDir, state)}
+
+Write-Output "SUCCESS: Environment variables updated"
+`
+
+  try {
+    await runPowerShell(envScript)
+  } catch (error) {
+    throw new Error(`Failed to sync environment variables: ${error instanceof Error ? error.message : String(error)}`)
+  }
+
+  // 同步当前进程的环境变量
   syncProcessEnvironment(rootDir, state, desiredProcessPath)
+
+  // 广播环境变量变化通知
   await notifyEnvironmentChanged()
+
+  // 验证环境变量是否成功写入
+  const verifyVariables = await getEnvironmentVariables()
+  const verifyPath = verifyVariables.find((item) => item.scope === 'user' && item.name.toLowerCase() === 'path')
+
+  if (!verifyPath || verifyPath.value !== desiredUserPath) {
+    console.warn('Warning: PATH verification shows unexpected value after sync')
+    console.warn('Expected:', desiredUserPath.substring(0, 100))
+    console.warn('Actual:', verifyPath?.value.substring(0, 100))
+  }
 }
 
 async function withProtectedMutation<T>(label: string, mutation: () => Promise<T>): Promise<T> {

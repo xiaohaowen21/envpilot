@@ -241,9 +241,38 @@ function buildPowerShellStringLiteral(value: string): string {
 }
 
 async function setEnvironmentVariable(scope: VariableScope, name: string, value: string): Promise<void> {
-  await runPowerShell(
-    `[Environment]::SetEnvironmentVariable('${name}', ${buildPowerShellStringLiteral(value)}, '${scope === 'user' ? 'User' : 'Machine'}')`,
-  )
+  const scopeName = scope === 'user' ? 'User' : 'Machine'
+
+  // 使用更可靠的方式设置环境变量
+  const script = `
+$scope = '${scopeName}'
+$name = '${name}'
+$value = ${buildPowerShellStringLiteral(value)}
+
+try {
+  # 设置环境变量
+  [Environment]::SetEnvironmentVariable($name, $value, $scope)
+
+  # 验证设置是否成功
+  $verify = [Environment]::GetEnvironmentVariable($name, $scope)
+
+  if ($value -and $verify -ne $value) {
+    throw "Environment variable verification failed: expected '$value', got '$verify'"
+  }
+
+  Write-Output "SUCCESS: Environment variable '$name' set to '$($value.Length) characters' in $scope scope"
+} catch {
+  Write-Error "Failed to set environment variable: $_"
+  throw
+}
+`
+
+  await runPowerShell(script)
+
+  // 同步到当前进程
+  if (scope === 'user') {
+    process.env[name] = value
+  }
 }
 
 async function isAdministrator(): Promise<boolean> {
@@ -257,8 +286,8 @@ $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator) | Co
 }
 
 async function notifyEnvironmentChanged(): Promise<void> {
-  await runPowerShell(
-    `
+  // 使用更可靠的方式广播环境变量变化
+  const script = `
 Add-Type @"
 using System;
 using System.Runtime.InteropServices;
@@ -275,10 +304,51 @@ public static class NativeMethods {
   );
 }
 "@
-[UIntPtr]$result = [UIntPtr]::Zero
-[void][NativeMethods]::SendMessageTimeout([IntPtr]0xffff, 0x1A, [UIntPtr]::Zero, 'Environment', 2, 5000, [ref]$result)
-`,
+
+try {
+  # 广播 WM_SETTINGCHANGE 消息到所有顶级窗口
+  [UIntPtr]$result = [UIntPtr]::Zero
+  $hwnd = [IntPtr]0xffff  # HWND_BROADCAST
+  $msg = 0x1A             # WM_SETTINGCHANGE
+  $flags = 2              # SMTO_ABORTIFHUNG
+  $timeout = 5000
+
+  # 发送消息
+  $sendResult = [NativeMethods]::SendMessageTimeout(
+    $hwnd,
+    $msg,
+    [UIntPtr]::Zero,
+    'Environment',
+    $flags,
+    $timeout,
+    [ref]$result
   )
+
+  if ($sendResult -eq [IntPtr]::Zero) {
+    Write-Warning "SendMessageTimeout returned zero, but continuing..."
+  } else {
+    Write-Output "SUCCESS: Environment change notification broadcast completed"
+  }
+
+  # 额外触发资源管理器刷新
+  $sendResult2 = [NativeMethods]::SendMessageTimeout(
+    $hwnd,
+    $msg,
+    [UIntPtr]::Zero,
+    'Environment',
+    $flags,
+    $timeout,
+    [ref]$result
+  )
+
+  # 等待一小段时间让系统处理消息
+  Start-Sleep -Milliseconds 500
+} catch {
+  Write-Warning "Failed to broadcast environment change: $_"
+}
+`
+
+  await runPowerShell(script)
 }
 
 export async function applyEnvironmentCleanup(): Promise<OperationResult> {
@@ -303,12 +373,30 @@ export async function applyEnvironmentCleanup(): Promise<OperationResult> {
       continue
     }
 
-    await setEnvironmentVariable(variable.scope, variable.name, cleaned.value)
-    changedScopes += 1
-    removedEntries += cleaned.removedCount
+    try {
+      await setEnvironmentVariable(variable.scope, variable.name, cleaned.value)
+      changedScopes += 1
+      removedEntries += cleaned.removedCount
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error)
+      throw new Error(`Failed to update ${variable.scope} PATH: ${errorMsg}`)
+    }
   }
 
+  // 广播环境变量变化，确保系统识别
   await notifyEnvironmentChanged()
+
+  // 验证写入是否成功
+  const verifyVariables = await getEnvironmentVariables()
+  const verifyPath = verifyVariables.find((item) => item.scope === 'user' && item.name.toLowerCase() === 'path')
+
+  if (changedScopes > 0 && verifyPath) {
+    // 验证至少用户级的PATH被更新了
+    const hasChanges = pathVariables.some(v => v.scope === 'user' && v.value !== verifyPath.value)
+    if (!hasChanges) {
+      console.warn('Warning: PATH cleanup might not have been applied correctly')
+    }
+  }
 
   return {
     message:
@@ -316,7 +404,7 @@ export async function applyEnvironmentCleanup(): Promise<OperationResult> {
         ? skippedMachine
           ? '未发现需要整理的用户级 PATH；系统级 PATH 因缺少管理员权限未处理。'
           : '未发现需要整理的 PATH 问题。'
-        : `已整理 ${changedScopes} 个 PATH 范围，移除或修复 ${removedEntries} 个异常项${skippedMachine ? '；系统级 PATH 因缺少管理员权限未处理。' : '。'}`,
+        : `已整理 ${changedScopes} 个 PATH 范围，移除或修复 ${removedEntries} 个异常项${skippedMachine ? '；系统级 PATH 因缺少管理员权限未处理。' : '。'}环境变量已更新并通知系统。`,
     ok: true,
   }
 }
