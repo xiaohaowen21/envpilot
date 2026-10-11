@@ -436,12 +436,34 @@ export async function readBackupHistory(): Promise<BackupRecord[]> {
   return records.sort((left, right) => right.createdAt.localeCompare(left.createdAt)).slice(0, 50)
 }
 
-export async function deleteBackup(filePath: string): Promise<OperationResult> {
-  if (!existsSync(filePath)) {
+// 备份的删除和恢复只允许操作备份目录里的 .json 文件，
+// 避免渲染进程传入任意路径导致删除或读取其他文件。
+async function resolveBackupPath(filePath: string): Promise<string> {
+  const { backupsDir } = await getStoragePaths()
+  const root = path.resolve(backupsDir)
+  const resolved = path.resolve(String(filePath ?? ''))
+  const relative = path.relative(root, resolved)
+
+  if (
+    !relative ||
+    relative.startsWith('..') ||
+    path.isAbsolute(relative) ||
+    path.extname(resolved).toLowerCase() !== '.json'
+  ) {
+    throw new Error('只能操作备份目录中的备份文件。')
+  }
+
+  if (!existsSync(resolved)) {
     throw new Error('备份文件不存在。')
   }
 
-  await fs.unlink(filePath)
+  return resolved
+}
+
+export async function deleteBackup(filePath: string): Promise<OperationResult> {
+  const backupPath = await resolveBackupPath(filePath)
+
+  await fs.unlink(backupPath)
 
   return {
     message: '备份已删除。',
@@ -450,11 +472,9 @@ export async function deleteBackup(filePath: string): Promise<OperationResult> {
 }
 
 export async function restoreBackup(filePath: string): Promise<OperationResult> {
-  if (!existsSync(filePath)) {
-    throw new Error('备份文件不存在。')
-  }
+  const backupPath = await resolveBackupPath(filePath)
 
-  const content = await fs.readFile(filePath, 'utf8')
+  const content = await fs.readFile(backupPath, 'utf8')
   const payload = JSON.parse(content) as BackupFilePayload
 
   await createEnvironmentBackup()
