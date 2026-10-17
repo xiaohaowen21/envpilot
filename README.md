@@ -1,116 +1,95 @@
 <div align="center">
 
+<img src="public/favicon.svg" width="64" height="64" alt="" />
+
 # EnvPilot
 
-A Windows-first desktop app for runtime setup, multi-version switching, and environment variable governance.
+在 Windows 上安装、切换多个版本的 Java / Node.js / Python / Go / Rust / PHP，并让 PATH 保持干净。
 
-[&#31616;&#20307;&#20013;&#25991;](#zh-cn) | [English](#english)
+Install and switch Java, Node.js, Python, Go, Rust and PHP versions on Windows, and keep PATH healthy.
 
-![License](https://img.shields.io/github/license/xiaohaowen21/envpilot?style=flat-square)
-![Release](https://img.shields.io/github/v/release/xiaohaowen21/envpilot?style=flat-square)
-![Issues](https://img.shields.io/github/issues/xiaohaowen21/envpilot?style=flat-square)
-![Stars](https://img.shields.io/github/stars/xiaohaowen21/envpilot?style=flat-square)
-![Forks](https://img.shields.io/github/forks/xiaohaowen21/envpilot?style=flat-square)
-![Platform](https://img.shields.io/badge/platform-Windows%2010%20%2F%2011-4f6f8f?style=flat-square)
-![Stack](https://img.shields.io/badge/stack-Electron%20%2B%20React%20%2B%20TypeScript-58677a?style=flat-square)
+[简体中文](#简体中文) · [English](#english)
+
+![EnvPilot](docs/screenshot.png)
 
 </div>
 
----
+## 简体中文
 
-<a id="zh-cn"></a>
+### 它做什么
 
-## &#31616;&#20307;&#20013;&#25991;
+- **多版本运行时**：从官方源下载并校验（有校验和的都会校验），装在 `%LOCALAPPDATA%\EnvPilot`，不需要管理员权限。
+- **一键切换**：每个运行时都有一个固定入口 `links\<名称>`，PATH 和 `JAVA_HOME` 只指向它。切换版本只是改这个入口，不改环境变量，新开的终端立即生效。
+- **告诉你终端里实际用的是哪个**：如果系统 PATH 里有别的 `java.exe` 排在前面（比如 Oracle 安装器留下的 `javapath`），会直接指出来，并可以一键移除。
+- **PATH 体检**：找出空项、重复项、不存在的目录和多余引号；可能在未插入的磁盘上的路径不会被默认删除。逐项勾选后再整理。
+- **快照**：每次修改环境变量前自动保存，可以对比差异并恢复。
 
-### &#39033;&#30446;&#31616;&#20171;
+### 安全原则
 
-EnvPilot &#26159;&#19968;&#20010;&#38754;&#21521; Windows &#30340;&#24320;&#21457;&#29615;&#22659;&#31649;&#29702;&#26700;&#38754;&#24037;&#20855;&#65292;&#32858;&#28966;&#36816;&#34892;&#26102;&#23433;&#35013;&#12289;&#22810;&#29256;&#26412;&#20999;&#25442;&#12289;&#29615;&#22659;&#21464;&#37327;&#27835;&#29702;&#12289;&#31995;&#32479;&#33021;&#21147;&#26816;&#27979;&#19982;&#22238;&#28378;&#12290;
+- 读写注册表时保留原始值和类型（`REG_EXPAND_SZ`），不会把 `%USERPROFILE%` 之类的引用写死成绝对路径。
+- 只有涉及系统级变量时才请求管理员权限，由 Windows 弹出 UAC 确认。
+- Windows 目录下的 PATH 项永远不会被提议删除。
+- 所有修改先保存快照，再一次性写入。
 
-### &#24403;&#21069;&#33021;&#21147;
+### 使用
 
-- &#35782;&#21035;&#26426;&#22120;&#37324;&#24050;&#32463;&#23384;&#22312;&#30340;&#36719;&#20214;&#65292;&#19981;&#35201;&#27714;&#24517;&#39035;&#30001; EnvPilot &#23433;&#35013;&#12290;
-- &#25176;&#31649; Java&#12289;Python&#12289;Node.js&#12289;Go&#12289;Rust&#12289;PHP &#30340;&#22810;&#29256;&#26412;&#12290;
-- &#25903;&#25345; Java &#21457;&#34892;&#29256;&#36873;&#25321;&#65306;Temurin&#12289;Oracle&#12289;Microsoft&#12290;
-- &#26816;&#27979;&#19982;&#25972;&#29702; Path &#20013;&#30340;&#37325;&#22797;&#39033;&#12289;&#31354;&#39033;&#12289;&#22833;&#25928;&#39033;&#21644;&#24322;&#24120;&#39033;&#12290;
-- &#26816;&#27979;&#24182;&#31649;&#29702; WSL&#12289;Hyper-V&#12289;Virtual Machine Platform&#12289;Docker Desktop&#12290;
+到 [Releases](https://github.com/xiaohaowen21/envpilot/releases) 下载安装版或便携版。需要 Windows 10 1803 或更新版本。
 
-### &#24555;&#36895;&#24320;&#22987;
-
-- &#19979;&#36733;&#26368;&#26032; Windows &#20415;&#25658;&#29256;&#65306;`EnvPilot-0.1.0-x64.exe`
-
-&#26412;&#22320;&#24320;&#21457;&#65306;
+### 开发
 
 ```bash
 npm install
-npm run dev
+npm run dev            # Electron 开发模式（需要 Windows）
+npm run dev:renderer   # 只启动界面，在任意系统的浏览器里用示例数据预览
+npm run check          # lint + 测试 + 构建
+npm run dist:win       # 打包安装版和便携版
 ```
 
-&#26500;&#24314;&#19982;&#25171;&#21253;&#65306;
+代码结构：
 
-```bash
-npm run lint
-npm run build
-npm run dist:win
-```
-
-### &#27880;&#24847;&#20107;&#39033;
-
-- &#24403;&#21069;&#39033;&#30446;&#20173;&#22788;&#20110;&#26089;&#26399;&#38454;&#27573;&#65292;&#27491;&#24335;&#27979;&#35797;&#21069;&#35831;&#20808;&#38405;&#35835; [KNOWN_ISSUES.md](./KNOWN_ISSUES.md)&#12290;
-- &#20462;&#25913;&#31995;&#32479;&#21151;&#33021;&#25110;&#29615;&#22659;&#21464;&#37327;&#21069;&#65292;&#24314;&#35758;&#20808;&#21019;&#24314;&#22791;&#20221;&#12290;
-
-### &#25991;&#26723;
-
-- [KNOWN_ISSUES.md](./KNOWN_ISSUES.md)
-- [ROADMAP.md](./ROADMAP.md)
-- [CONTRIBUTING.md](./CONTRIBUTING.md)
+| 目录 | 内容 |
+| --- | --- |
+| `electron/core` | 纯逻辑：PATH 解析、命令解析顺序、变更计划、版本目录解析。全部有单元测试。 |
+| `electron/platform` | 和 Windows 打交道的部分：注册表、PowerShell、junction、解压。 |
+| `electron/services` | 把上面两层组合成具体功能：安装、切换、快照、设置。 |
+| `electron/ipc.ts` | 所有 IPC 通道，入参用 zod 校验，修改类操作串行执行。 |
+| `shared` | 主进程和界面共用的类型与 API 定义。 |
+| `src` | React 界面，按页面拆分。 |
 
 ---
-
-<a id="english"></a>
 
 ## English
 
-### Overview
+### What it does
 
-EnvPilot is a Windows-first desktop tool focused on runtime installation, multi-version switching, environment variable governance, system capability checks, and rollback-friendly operations.
+- **Multiple runtime versions**: downloaded from official sources, verified against published checksums, and installed under `%LOCALAPPDATA%\EnvPilot` without administrator rights.
+- **One-click switching**: each runtime has a stable junction, `links\<name>`, that PATH and `JAVA_HOME` point at. Switching only retargets the junction, so environment variables never change and new terminals pick it up at once.
+- **Shows what your terminal really runs**: if another `java.exe` comes first on the system PATH (such as Oracle's `javapath`), EnvPilot says so and can remove it.
+- **PATH check-up**: finds empty, duplicate, missing and quoted entries. Entries it can't verify (an unplugged drive, an undefined variable) are never removed by default. You pick what to fix.
+- **Snapshots**: taken automatically before every change, with a diff view and restore.
 
-### Current Capabilities
+### Safety
 
-- Detect software already present on the machine, even if EnvPilot did not install it
-- Manage multiple versions of Java, Python, Node.js, Go, Rust, and PHP
-- Support Java vendor selection for Temurin, Oracle, and Microsoft
-- Scan and clean duplicate, empty, missing, and suspicious Path entries
-- Detect and manage WSL, Hyper-V, Virtual Machine Platform, and Docker Desktop
+- Registry values are read and written raw and keep their type (`REG_EXPAND_SZ`), so references like `%USERPROFILE%` are never flattened into absolute paths.
+- Administrator rights are requested through UAC only when system variables change.
+- PATH entries inside the Windows folder are never offered for removal.
+- Every change is snapshotted first, then written in a single step.
 
-### Quick Start
+### Install
 
-- Download the latest Windows portable build: `EnvPilot-0.1.0-x64.exe`
+Download the installer or the portable build from [Releases](https://github.com/xiaohaowen21/envpilot/releases). Requires Windows 10 1803 or later.
 
-Local development:
+### Develop
 
 ```bash
 npm install
-npm run dev
+npm run dev            # Electron in development mode (Windows)
+npm run dev:renderer   # UI only, with sample data, in any browser on any OS
+npm run check          # lint + tests + build
+npm run dist:win       # build the installer and the portable app
 ```
 
-Build and package:
-
-```bash
-npm run lint
-npm run build
-npm run dist:win
-```
-
-### Notes
-
-- This project is still in an early stage. Please read [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) before testing on a real machine.
-- Create a backup before changing system features or environment variables.
-
-### Documentation
-
-- [KNOWN_ISSUES.md](./KNOWN_ISSUES.md)
-- [ROADMAP.md](./ROADMAP.md)
-- [CONTRIBUTING.md](./CONTRIBUTING.md)
+See the table above for how the code is organised. Known limitations are listed in [KNOWN_ISSUES.md](./KNOWN_ISSUES.md).
 
 ## License
 

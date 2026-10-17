@@ -2,31 +2,24 @@
 
 Thanks for helping improve EnvPilot.
 
-## Before You Start
-
-- Read [KNOWN_ISSUES.md](./KNOWN_ISSUES.md)
-- Keep pull requests focused and small
-- Prefer bug fixes and stabilization over broad feature expansion
-
-## Local Setup
+## Setup
 
 ```bash
 npm install
-npm run dev
+npm run dev            # Electron, on Windows
+npm run dev:renderer   # UI only with sample data, on any OS
 ```
 
-## Validation
-
-Please run these before opening a pull request:
+## Before opening a pull request
 
 ```bash
-npm run lint
-npm run build
+npm run check   # lint, tests and build
 ```
 
 ## Guidelines
 
-- Do not commit build artifacts such as `dist/`, `dist-electron/`, or `release/`
-- Be careful with code that edits system environment variables
-- Prefer clear, minimal changes over large rewrites
-- Document user-visible limitations honestly
+- Keep system-independent logic in `electron/core` and cover it with tests; keep side effects in `electron/platform`.
+- Every change to environment variables goes through `services/environment.ts#apply`, which snapshots first.
+- Never flatten `%VAR%` references or change a registry value's type.
+- User-facing text lives in `src/locales`; add both languages.
+- Don't commit `dist/`, `dist-electron/` or `release/`.

@@ -9,6 +9,7 @@ Describe the change in 1-3 sentences.
 ## Validation
 
 - [ ] `npm run lint`
+- [ ] `npm test`
 - [ ] `npm run build`
 
 ## Risks
