@@ -97,13 +97,20 @@ function toPayload(error: unknown): ErrorPayload {
   return { code: 'unknown', params: { message: error instanceof Error ? error.message : String(error) } }
 }
 
+/** Electron's IPC turns an omitted optional argument into null; drop those so optional schemas accept it. */
+function withoutTrailingNulls(args: unknown[]): unknown[] {
+  let end = args.length
+  while (end > 0 && args[end - 1] == null) end--
+  return args.slice(0, end)
+}
+
 async function handle<C extends Channel>(channel: C, sender: WebContents, raw: unknown[]): Promise<Result<ReturnType<Api[C]>>> {
   const exclusive = MUTATIONS.has(channel)
   let acquired = false
   try {
     if (exclusive && running) throw new AppError('busy', { channel: running })
     if (exclusive) [running, acquired] = [channel, true]
-    const args = schemas[channel].parse(raw)
+    const args = schemas[channel].parse(withoutTrailingNulls(raw))
     const handler = handlers[channel] as (sender: WebContents, ...args: unknown[]) => Promise<ReturnType<Api[C]>>
     return { ok: true, data: await handler(sender, ...args) }
   } catch (error) {

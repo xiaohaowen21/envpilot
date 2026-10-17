@@ -35,7 +35,7 @@ export function InstallDialog({ status, onInstall, onClose }: InstallDialogProps
           <Button
             variant="primary"
             disabled={!choice}
-            onClick={() => choice && onInstall({ runtime: status.key, version: choice, vendor: isJava ? vendor : undefined })}
+            onClick={() => choice && onInstall(isJava ? { runtime: status.key, version: choice, vendor } : { runtime: status.key, version: choice })}
           >
             {t('install.submit')}
           </Button>
