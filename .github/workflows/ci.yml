@@ -27,6 +27,20 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
+      # Launch the packaged app and make sure it opens its window instead of an error dialog.
+      - name: Smoke test
+        shell: pwsh
+        run: |
+          Start-Process release\win-unpacked\EnvPilot.exe
+          $title = ''
+          for ($i = 0; $i -lt 30 -and $title -ne 'EnvPilot'; $i++) {
+            Start-Sleep -Seconds 1
+            $title = (Get-Process -Name EnvPilot -ErrorAction SilentlyContinue |
+              Where-Object MainWindowTitle | Select-Object -First 1).MainWindowTitle
+          }
+          Get-Process -Name EnvPilot -ErrorAction SilentlyContinue | Stop-Process -Force
+          if ($title -ne 'EnvPilot') { throw "App did not open its window (window title: '$title')" }
+
       - uses: actions/upload-artifact@v4
         with:
           name: EnvPilot-windows
