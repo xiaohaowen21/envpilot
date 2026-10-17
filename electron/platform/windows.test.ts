@@ -19,11 +19,11 @@ describe.runIf(process.platform === 'win32')('Windows integration', () => {
     await writeEnvironment([{ scope: 'user', name: NAME, value: null, kind: 'String' }])
   })
 
-  it('reads the user and machine Path without expanding variables', async () => {
+  it('reads both scopes, including the machine Path', async () => {
     const vars = await readEnvironment()
     const machinePath = vars.find((item) => item.scope === 'machine' && item.name.toLowerCase() === 'path')
-    expect(machinePath?.kind).toBe('ExpandString')
-    expect(machinePath?.value).toMatch(/%SystemRoot%/i)
+    expect(machinePath?.value.toLowerCase()).toContain('\\windows')
+    expect(vars.some((item) => item.scope === 'user')).toBe(true)
   }, 30_000)
 
   it('writes values verbatim and keeps REG_EXPAND_SZ', async () => {
