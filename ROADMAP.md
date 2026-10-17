@@ -1,29 +1,13 @@
 # Roadmap
 
-## Phase 1: Stabilize The MVP
+## Next
 
-- Fix install / switch / uninstall reliability
-- Improve rollback and error handling
-- Make runtime detection more accurate
-- Eliminate white-screen and startup regressions
+- Per-project versions: a `.envpilot` file that a shell hook reads, so a folder can pin its own Java or Node version.
+- Install progress that survives switching pages, and cancelling a download.
+- Editing individual environment variables, with the same snapshot-first safety.
 
-## Phase 2: Make The UI Trustworthy
+## Later
 
-- Simplify information architecture
-- Improve card interaction logic
-- Polish bilingual copy and consistency
-- Reduce visual clutter and improve readability
-
-## Phase 3: Expand Core Capability
-
-- Better download progress and task state
-- Better environment diagnostics
-- Better backup browsing and restore UX
-- Better handling for system-installed versus EnvPilot-managed runtimes
-
-## Phase 4: Open Source Readiness
-
-- Add tests and CI gates
-- Add icons and release assets
-- Improve documentation and screenshots
-- Publish consistent GitHub releases
+- Signed releases and automatic updates.
+- More runtimes (Maven, Gradle, .NET SDK) through the same catalog interface.
+- End-to-end install tests on the Windows CI runner for each runtime.

@@ -1,38 +1,8 @@
 # Known Issues
 
-This list is intentionally blunt. The project still has many unresolved problems.
-
-## Core Runtime Management
-
-- Uninstall can fail when a runtime is still being used by another process.
-- Some runtime install, switch, and cleanup flows still need stronger rollback behavior.
-- Runtime metadata and system-installed tool detection are not fully trustworthy yet.
-- Java vendor support exists, but downstream tool recognition still needs more validation.
-
-## Environment Variables
-
-- Environment variable cleanup rules are still conservative and incomplete.
-- Old operation logs may contain garbled historical text from earlier encoding problems.
-- More guardrails are needed before changing machine-level settings.
-
-## Platform Features
-
-- WSL, Hyper-V, Virtual Machine Platform, and Docker handling still needs clearer semantics and more testing.
-- “Disable” versus “uninstall” behavior needs more UX refinement.
-
-## UI / UX
-
-- The current UI is still inconsistent across modules.
-- Layout density, hierarchy, and card interactions need another design pass.
-- Internationalization coverage is incomplete.
-
-## Packaging / Release
-
-- Portable build packaging works, but release validation is still shallow.
-- No application icon, signed build, or polished GitHub release pipeline yet.
-
-## Engineering Quality
-
-- Automated test coverage is still missing.
-- There is no persistent regression suite for install / uninstall flows.
-- The codebase needs cleanup, simplification, and clearer module boundaries.
+- **Installs from 0.1.x are not migrated.** 0.2 keeps runtimes in a new layout under `%LOCALAPPDATA%\EnvPilot`. Uninstall old runtimes with 0.1, or delete the old folder and remove its entries from PATH (the PATH check-up will flag them as missing).
+- **Install flows are verified by CI only in part.** The Windows CI job tests registry reads and writes, elevation, junctions and zip extraction on a real runner, but does not download and install every runtime. Rust (via rustup) and Python (via the official NuGet package) have had the least real-world use.
+- **Python comes from the NuGet distribution.** It has no `py` launcher and does not register itself with Windows, which is what lets several versions live side by side.
+- **Oracle JDK** is offered only for the releases Oracle publishes as "latest" under its free licence (currently 21 and 25).
+- **Programs that were already open** (including some IDEs) keep their old environment until restarted. New terminals see changes immediately.
+- **Unsigned builds** may trigger a SmartScreen warning on first launch.
