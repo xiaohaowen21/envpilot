@@ -1,41 +1,20 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 
-import type { DownloadProgress, ElectronApi } from '../shared/contracts'
+import { CHANNELS, PROGRESS_EVENT, type Bridge, type Channel } from '../shared/api'
+import type { InstallProgress } from '../shared/types'
 
-const api: ElectronApi = {
-  applyCleanup: () => ipcRenderer.invoke('cleanup:apply'),
-  clearOperationLogs: () => ipcRenderer.invoke('logs:clear'),
-  createBackup: () => ipcRenderer.invoke('backup:create'),
-  deleteBackup: (filePath) => ipcRenderer.invoke('backup:delete', filePath),
-  exportConfig: () => ipcRenderer.invoke('config:export'),
-  getConfig: () => ipcRenderer.invoke('config:get'),
-  getDashboard: () => ipcRenderer.invoke('dashboard:get'),
-  getBackups: () => ipcRenderer.invoke('backups:get'),
-  getOperationLogs: (limit) => ipcRenderer.invoke('logs:get', limit),
-  importConfig: (data) => ipcRenderer.invoke('config:import', data),
-  installRuntime: (runtime, options) => ipcRenderer.invoke('runtime:install', runtime, options),
-  installSystemTool: (tool) => ipcRenderer.invoke('system-tool:install', tool),
-  onDownloadProgress: (callback: (progress: DownloadProgress) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, progress: DownloadProgress) => {
-      callback(progress)
-    }
+const allowed = new Set<string>(CHANNELS)
 
-    ipcRenderer.on('download:progress', handler)
-
-    return () => {
-      ipcRenderer.removeListener('download:progress', handler)
-    }
+const bridge: Bridge = {
+  invoke: (channel: Channel, ...args: unknown[]) => {
+    if (!allowed.has(channel)) return Promise.reject(new Error(`Unknown channel ${channel}`))
+    return ipcRenderer.invoke(channel, ...args)
   },
-  previewCleanup: () => ipcRenderer.invoke('cleanup:preview'),
-  restoreBackup: (filePath) => ipcRenderer.invoke('backup:restore', filePath),
-  runDiagnostics: () => ipcRenderer.invoke('diagnostics:run'),
-  saveConfig: (config) => ipcRenderer.invoke('config:save', config),
-  showNotification: (title, body) => ipcRenderer.invoke('notification:show', title, body),
-  switchRuntime: (runtime, runtimeId) => ipcRenderer.invoke('runtime:switch', runtime, runtimeId),
-  uninstallSystemTool: (tool) => ipcRenderer.invoke('system-tool:uninstall', tool),
-  uninstallProgram: (programId) => ipcRenderer.invoke('program:uninstall', programId),
-  uninstallRuntime: (runtime, runtimeId) =>
-    ipcRenderer.invoke('runtime:uninstall', runtime, runtimeId),
+  onInstallProgress: (listener) => {
+    const handler = (_event: IpcRendererEvent, progress: InstallProgress) => listener(progress)
+    ipcRenderer.on(PROGRESS_EVENT, handler)
+    return () => ipcRenderer.removeListener(PROGRESS_EVENT, handler)
+  },
 }
 
-contextBridge.exposeInMainWorld('envPilot', api)
+contextBridge.exposeInMainWorld('envPilot', bridge)
